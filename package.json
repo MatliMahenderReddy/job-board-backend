@@ -6,6 +6,9 @@
     "start": "node server.js",
     "dev": "nodemon server.js"
   },
+  "engines": {
+    "node": "18.x"
+  },
   "dependencies": {
     "@sparticuz/chromium": "^148.0.0",
     "cors": "^2.8.5",
@@ -13,6 +16,7 @@
     "p-limit": "^3.1.0",
     "puppeteer": "^25.0.4",
     "puppeteer-extra": "^3.3.6",
+    
     "puppeteer-extra-plugin-stealth": "^2.11.2"
   },
   "devDependencies": {
