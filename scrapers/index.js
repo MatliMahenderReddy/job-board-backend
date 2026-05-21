@@ -1,12 +1,13 @@
-const puppeteer = require("puppeteer-extra");
 
 const StealthPlugin = require("puppeteer-extra-plugin-stealth");
 
 const chromium = require("@sparticuz/chromium");
 
 const pLimit = require("p-limit");
-
+const puppeteer = require("puppeteer-core");
 puppeteer.use(StealthPlugin());
+
+const isProduction = "production" === "production"
 
 // ==========================================
 // SCRAPERS
@@ -38,34 +39,42 @@ const CONFIG = {
 
 async function createBrowser() {
 
-  const browser = await puppeteer.launch({
+  const browser = await puppeteer.launch(
+  //   {
 
-    headless: true,
+  //   headless: true,
 
-    executablePath:
-      process.env.PUPPETEER_EXECUTABLE_PATH ||
-      (await chromium.executablePath()),
+  //   executablePath:
+  //     process.env.PUPPETEER_EXECUTABLE_PATH ||
+  //     (await chromium.executablePath()),
 
-    ignoreHTTPSErrors: true,
+  //   ignoreHTTPSErrors: true,
 
-    protocolTimeout: 300000,
+  //   protocolTimeout: 300000,
 
-    args: [
-      ...chromium.args,
+  //   args: [
+  //     ...chromium.args,
 
-      "--no-sandbox",
-      "--disable-setuid-sandbox",
-      "--disable-dev-shm-usage",
-      "--disable-accelerated-2d-canvas",
-      "--disable-gpu",
-      "--window-size=1920,1080",
-      "--single-process",
-      "--no-zygote",
-      "--disable-web-security",
-    ],
+  //     "--no-sandbox",
+  //     "--disable-setuid-sandbox",
+  //     "--disable-dev-shm-usage",
+  //     "--disable-accelerated-2d-canvas",
+  //     "--disable-gpu",
+  //     "--window-size=1920,1080",
+  //     "--single-process",
+  //     "--no-zygote",
+  //     "--disable-web-security",
+  //   ],
 
+  //   defaultViewport: chromium.defaultViewport,
+  // }
+  {
+    args: chromium.args,
     defaultViewport: chromium.defaultViewport,
-  });
+    executablePath: await chromium.executablePath(),
+    headless: chromium.headless,
+  }
+);
 
   browser.on("disconnected", () => {
     console.log("Browser disconnected");
