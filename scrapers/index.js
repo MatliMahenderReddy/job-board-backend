@@ -1,13 +1,10 @@
-
-const StealthPlugin = require("puppeteer-extra-plugin-stealth");
-
 const chromium = require("@sparticuz/chromium");
-
-const pLimit = require("p-limit");
 const puppeteer = require("puppeteer-core");
-puppeteer.use(StealthPlugin());
+const puppeteerExtra = require("puppeteer-extra");
+const StealthPlugin = require("puppeteer-extra-plugin-stealth");
+const pLimit = require("p-limit");
 
-const isProduction = "production" === "production"
+puppeteerExtra.use(StealthPlugin());
 
 // ==========================================
 // SCRAPERS
@@ -38,49 +35,51 @@ const CONFIG = {
 // ==========================================
 
 async function createBrowser() {
+  try {
+    const executablePath =
+      process.env.PUPPETEER_EXECUTABLE_PATH ||
+      (await chromium.executablePath());
 
-  const browser = await puppeteer.launch(
-  //   {
+    console.log("Chrome Path:", executablePath);
 
-  //   headless: true,
+    const browser = await puppeteerExtra.launch({
+      headless: true,
 
-  //   executablePath:
-  //     process.env.PUPPETEER_EXECUTABLE_PATH ||
-  //     (await chromium.executablePath()),
+      executablePath,
 
-  //   ignoreHTTPSErrors: true,
+      ignoreHTTPSErrors: true,
 
-  //   protocolTimeout: 300000,
+      protocolTimeout: 300000,
 
-  //   args: [
-  //     ...chromium.args,
+      defaultViewport: {
+        width: 1920,
+        height: 1080,
+      },
 
-  //     "--no-sandbox",
-  //     "--disable-setuid-sandbox",
-  //     "--disable-dev-shm-usage",
-  //     "--disable-accelerated-2d-canvas",
-  //     "--disable-gpu",
-  //     "--window-size=1920,1080",
-  //     "--single-process",
-  //     "--no-zygote",
-  //     "--disable-web-security",
-  //   ],
+      args: [
+        ...chromium.args,
 
-  //   defaultViewport: chromium.defaultViewport,
-  // }
-  {
-    args: chromium.args,
-    defaultViewport: chromium.defaultViewport,
-    executablePath: await chromium.executablePath(),
-    headless: chromium.headless,
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",
+        "--disable-accelerated-2d-canvas",
+        "--disable-gpu",
+        "--window-size=1920,1080",
+        "--single-process",
+        "--no-zygote",
+        "--disable-web-security",
+      ],
+    });
+
+    browser.on("disconnected", () => {
+      console.log("Browser disconnected");
+    });
+
+    return browser;
+  } catch (error) {
+    console.log("BROWSER CREATE ERROR:", error);
+    throw error;
   }
-);
-
-  browser.on("disconnected", () => {
-    console.log("Browser disconnected");
-  });
-
-  return browser;
 }
 
 // ==========================================
@@ -100,7 +99,6 @@ async function scrapeJobs({
   onError,
   onBoardDone,
 }) {
-
   const requiredSkills = skills
     ? skills
         .split(",")
@@ -108,18 +106,16 @@ async function scrapeJobs({
         .filter(Boolean)
     : [];
 
-  const browser = await createBrowser();
+  let browser;
 
   try {
+    browser = await createBrowser();
 
     const boardLimit = pLimit(2);
 
     await Promise.all(
-
       boards.map((board) =>
-
         boardLimit(async () => {
-
           const scraper = SCRAPERS[board];
 
           if (!scraper) {
@@ -128,7 +124,6 @@ async function scrapeJobs({
           }
 
           try {
-
             onProgress(`[${board}] Starting`);
 
             const jobs = await scraper.scrape({
@@ -153,13 +148,9 @@ async function scrapeJobs({
             const detailLimit = pLimit(CONFIG.CONCURRENCY);
 
             await Promise.all(
-
               jobs.map((job, index) =>
-
                 detailLimit(async () => {
-
                   try {
-
                     let finalJob = job;
 
                     // ==========================================
@@ -167,7 +158,6 @@ async function scrapeJobs({
                     // ==========================================
 
                     if (scraper.scrapeDetail) {
-
                       const detailed =
                         await scraper.scrapeDetail({
                           browser,
@@ -182,11 +172,10 @@ async function scrapeJobs({
                     }
 
                     // ==========================================
-                    // SKILLS
+                    // SKILLS MATCH
                     // ==========================================
 
                     if (requiredSkills.length > 0) {
-
                       const text = (
                         finalJob.description ||
                         finalJob.title ||
@@ -197,9 +186,7 @@ async function scrapeJobs({
                         requiredSkills.filter((skill) =>
                           text.includes(skill)
                         );
-
                     } else {
-
                       finalJob.matchedSkills = [];
                     }
 
@@ -217,8 +204,11 @@ async function scrapeJobs({
                     onProgress(
                       `[${board}] OK ${index + 1}/${jobs.length}`
                     );
-
                   } catch (err) {
+                    console.log(
+                      `[${board}] DETAIL ERROR:`,
+                      err.message
+                    );
 
                     onProgress(
                       `[${board}] Detail Error: ${err.message}`
@@ -233,9 +223,7 @@ async function scrapeJobs({
             if (onBoardDone) {
               onBoardDone(board);
             }
-
           } catch (err) {
-
             console.log(
               `SCRAPER ERROR (${board})`,
               err
@@ -246,14 +234,12 @@ async function scrapeJobs({
         })
       )
     );
-
   } catch (err) {
-
     console.log("GLOBAL SCRAPER ERROR:", err);
-
   } finally {
-
-    await browser.close();
+    if (browser) {
+      await browser.close();
+    }
   }
 }
 
