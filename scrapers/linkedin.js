@@ -152,7 +152,6 @@
 // FILTER COMPANIES BELOW 1200 EMPLOYEES
 // PRODUCTION LEVEL
 // ======================================================
-
 const pLimit = require("p-limit");
 
 const DATE_FILTER_MAP = {
@@ -259,7 +258,9 @@ async function scrape({
       };
 
       if (
-        expMap[filters.experienceLevel]
+        expMap[
+          filters.experienceLevel
+        ]
       ) {
         params.set(
           "f_E",
@@ -273,9 +274,6 @@ async function scrape({
     // ==================================================
     // COMPANY SIZE FILTER
     // ==================================================
-
-    // Includes 1001-5000 because LinkedIn
-    // does NOT provide 1001-1200 filter
 
     params.set(
       "f_CS",
@@ -292,9 +290,21 @@ async function scrape({
     // ==================================================
 
     await page.goto(url, {
-      waitUntil: "domcontentloaded",
+      waitUntil: "networkidle2",
       timeout,
     });
+
+    await delay(
+      3000 + Math.random() * 3000
+    );
+
+    // ==================================================
+    // HUMAN-LIKE MOUSE MOVEMENT
+    // ==================================================
+
+    await page.mouse.move(100, 100);
+    await page.mouse.move(300, 300);
+    await page.mouse.move(500, 500);
 
     // ==================================================
     // AUTH WALL DETECTION
@@ -308,14 +318,30 @@ async function scrape({
       );
     }
 
+    const html =
+      await page.content();
+
+    if (
+      html.includes("Sign in") ||
+      html.includes("Join now")
+    ) {
+      throw new Error(
+        "LinkedIn login wall detected"
+      );
+    }
+
     // ==================================================
     // WAIT JOBS
     // ==================================================
 
     await page.waitForSelector(
-      ".jobs-search__results-list li",
+      `
+      .jobs-search__results-list li,
+      .jobs-search-results-list li,
+      .base-card
+      `,
       {
-        timeout: 20000,
+        timeout: 45000,
       }
     );
 
@@ -323,7 +349,7 @@ async function scrape({
     // SCROLL
     // ==================================================
 
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 10; i++) {
       await page.evaluate(() => {
         window.scrollBy(
           0,
@@ -331,7 +357,9 @@ async function scrape({
         );
       });
 
-      await delay(1500);
+      await delay(
+        1000 + Math.random() * 2000
+      );
     }
 
     // ==================================================
@@ -339,7 +367,11 @@ async function scrape({
     // ==================================================
 
     const jobs = await page.$$eval(
-      ".jobs-search__results-list li",
+      `
+      .jobs-search__results-list li,
+      .jobs-search-results-list li,
+      .base-card
+      `,
       (cards) => {
         return cards.map((card) => {
           const anchor =
@@ -455,6 +487,13 @@ async function scrape({
       err.message
     );
 
+    try {
+      await page.screenshot({
+        path: `linkedin-error-${Date.now()}.png`,
+        fullPage: true,
+      });
+    } catch {}
+
     return [];
   } finally {
     await page.close();
@@ -481,9 +520,14 @@ async function scrapeDetail({
       async () => {
         await page.goto(job.link, {
           waitUntil:
-            "domcontentloaded",
+            "networkidle2",
           timeout,
         });
+
+        await delay(
+          2000 +
+            Math.random() * 2000
+        );
 
         if (
           page.url().includes(
@@ -498,7 +542,7 @@ async function scrapeDetail({
         await page.waitForSelector(
           ".description__text",
           {
-            timeout: 15000,
+            timeout: 20000,
           }
         );
       },
@@ -680,7 +724,7 @@ async function scrapeDetail({
 async function scrapeCompanySize(
   browser,
   companyUrl,
-  timeout = 15000
+  timeout = 20000
 ) {
   const page = await browser.newPage();
 
@@ -688,77 +732,24 @@ async function scrapeCompanySize(
 
   try {
     await page.goto(companyUrl, {
-      waitUntil: "domcontentloaded",
+      waitUntil: "networkidle2",
       timeout,
     });
 
-    await delay(2000);
+    await delay(3000);
 
     const sizeText =
       await page.evaluate(() => {
-        const selectors = [
-          '[data-test-id="about-us__size"]',
-          ".org-about-module__company-staff-count-range",
-          ".org-about-company-module__company-staff-count-range",
-        ];
+        const bodyText =
+          document.body.innerText;
 
-        for (const sel of selectors) {
-          const el =
-            document.querySelector(
-              sel
-            );
-
-          if (
-            el?.innerText?.match(
-              /\\d/
-            )
-          ) {
-            return el.innerText.trim();
-          }
-        }
-
-        const lines =
-          document.body.innerText.split(
-            "\\n"
+        const match =
+          bodyText.match(
+            /([\d,]+)\s*[-–]\s*([\d,]+)\s*employees/i
           );
 
-        for (const line of lines) {
-          const lower =
-            line.toLowerCase();
-
-          // ignore associated members
-
-          if (
-            lower.includes(
-              "associated members"
-            )
-          )
-            continue;
-
-          if (
-            lower.includes(
-              "associated linkedin members"
-            )
-          )
-            continue;
-
-          const rangeMatch =
-            line.match(
-              /([\\d,]+)\\s*[-–]\\s*([\\d,]+)\\s*employees/i
-            );
-
-          if (rangeMatch) {
-            return rangeMatch[0];
-          }
-
-          const plusMatch =
-            line.match(
-              /([\\d,]+)\\+?\\s*employees/i
-            );
-
-          if (plusMatch) {
-            return plusMatch[0];
-          }
+        if (match) {
+          return match[0];
         }
 
         return null;
@@ -767,7 +758,7 @@ async function scrapeCompanySize(
     return parseEmployeeCount(
       sizeText
     );
-  } catch (err) {
+  } catch {
     return null;
   } finally {
     await page.close();
@@ -783,16 +774,13 @@ function parseEmployeeCount(
 ) {
   if (!text) return null;
 
-  text = text.toLowerCase();
-
-  const cleaned =
-    text.replace(/,/g, "");
-
-  // 1001-5000
+  text = text
+    .toLowerCase()
+    .replace(/,/g, "");
 
   const rangeMatch =
-    cleaned.match(
-      /(\\d+)\\s*[-–]\\s*(\\d+)/
+    text.match(
+      /(\d+)\s*[-–]\s*(\d+)/
     );
 
   if (rangeMatch) {
@@ -801,12 +789,8 @@ function parseEmployeeCount(
     );
   }
 
-  // 10000+
-
   const plusMatch =
-    cleaned.match(
-      /(\\d+)\\+/
-    );
+    text.match(/(\d+)\+/);
 
   if (plusMatch) {
     return Number(
@@ -814,10 +798,8 @@ function parseEmployeeCount(
     );
   }
 
-  // 500 employees
-
   const singleMatch =
-    cleaned.match(/(\\d+)/);
+    text.match(/(\d+)/);
 
   if (singleMatch) {
     return Number(
@@ -848,7 +830,7 @@ function dedup(jobs) {
 }
 
 // ======================================================
-// HELPERS
+// RETRY
 // ======================================================
 
 async function retry(
@@ -869,12 +851,19 @@ async function retry(
         return false;
       }
 
-      await delay(2000);
+      await delay(
+        2000 +
+          Math.random() * 2000
+      );
     }
   }
 
   return false;
 }
+
+// ======================================================
+// SAFE TEXT
+// ======================================================
 
 async function safeText(
   page,
@@ -891,12 +880,26 @@ async function safeText(
   }
 }
 
+// ======================================================
+// PREPARE PAGE
+// ======================================================
+
 async function preparePage(
   page
 ) {
+  await page.setViewport({
+    width: 1366,
+    height: 768,
+  });
+
   await page.setUserAgent(
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124 Safari/537.36"
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
   );
+
+  await page.setExtraHTTPHeaders({
+    "accept-language":
+      "en-US,en;q=0.9",
+  });
 
   await page.setRequestInterception(
     true
@@ -913,7 +916,6 @@ async function preparePage(
           "image",
           "font",
           "media",
-          "stylesheet",
         ].includes(type)
       ) {
         request.abort();
@@ -923,6 +925,10 @@ async function preparePage(
     }
   );
 }
+
+// ======================================================
+// DELAY
+// ======================================================
 
 function delay(ms) {
   return new Promise((r) =>
