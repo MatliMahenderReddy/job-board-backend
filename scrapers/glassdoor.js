@@ -13,7 +13,7 @@ async function scrape({ browser, keyword, location, filters, targetPage, timeout
     const p = targetPage;
     const encodedKeyword = encodeURIComponent(keyword.replace(/\s+/g, "-"));
     const encodedLocation = encodeURIComponent(location.replace(/\s+/g, "-"));
-    const url = `https://www.glassdoor.com/Job/${encodedLocation}-${encodedKeyword}-jobs-SRCH_IL.0,${encodedLocation.length}_IN1_KO${encodedLocation.length + 1},${encodedLocation.length + 1 + encodedKeyword.length}.htm?p=${p}`;
+    const url = `https://www.glassdoor.com/Job/${encodedLocation}-${encodedKeyword}-jobs-SRCH_IL.0,${encodedLocation.length}_IN1_KO${encodedLocation.length + 1},${encodedLocation.length + 1 + encodedKeyword.length}.htm?p=${p}&employerSizes=3`;
 
     onProgress(`Page ${p}: ${url}`);
 
@@ -25,10 +25,14 @@ async function scrape({ browser, keyword, location, filters, targetPage, timeout
           cards.map((card) => {
             const anchor = card.querySelector('a[data-test="job-title"]') || card.querySelector('.job-title a');
             const link = anchor ? ("https://www.glassdoor.com" + (anchor.getAttribute("href") || "")) : "";
-
+        const companyEl =
+            card.querySelector('[data-test="employer-short-name"]') ||
+            card.querySelector('span[class*="EmployerProfile"]') ||
+            card.querySelector('heading_Heading__aomVx heading_Subhead__jiUbT"]') ||
+            card.querySelector('[data-test="employer-name"]'); // legacy fallback
             return {
               title: anchor?.innerText?.trim() || card.querySelector('.job-title')?.innerText?.trim() || "",
-              company: card.querySelector('[data-test="employer-name"]')?.innerText?.trim() || "",
+              company: companyEl?.innerText?.trim() || "",
               location: card.querySelector('[data-test="emp-location"]')?.innerText?.trim() || "",
               salary: card.querySelector('[data-test="detailSalary"]')?.innerText?.trim() || "",
               posted: card.querySelector('[data-test="job-age"]')?.innerText?.trim() || "",
