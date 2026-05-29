@@ -23,8 +23,19 @@ async function scrape({ browser, keyword, location, filters, targetPage, timeout
 
         const jobs = await page.$$eval('[data-test="jobListing"]', (cards) =>
           cards.map((card) => {
-            const anchor = card.querySelector('a[data-test="job-title"]') || card.querySelector('.job-title a');
-            const link = anchor ? ("https://www.glassdoor.com" + (anchor.getAttribute("href") || "")) : "";
+            // const anchor = card.querySelector('a[data-test="job-title"]') || card.querySelector('.job-title a');
+            // const link = anchor ? ("https://www.glassdoor.com" + (anchor.getAttribute("href") || "")) : "";
+                 const anchor =  card.querySelector('a[href*="job-listing"]')||card.querySelector('a[data-test="job-title"]') || card.querySelector('.job-title a');
+            // const link = anchor ? ("https://www.glassdoor.com" + (anchor.getAttribute("href") || "")) : "";
+           
+
+let link = "";
+if (anchor) {
+  const href = anchor.getAttribute("href") || "";
+  link = href.startsWith("http")
+    ? href
+    : `https://www.glassdoor.com${href}`;    // ✅ produces full valid URL
+}
         const companyEl =
             card.querySelector('[data-test="employer-short-name"]') ||
             card.querySelector('span[class*="EmployerProfile"]') ||
