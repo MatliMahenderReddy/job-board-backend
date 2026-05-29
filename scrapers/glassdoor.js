@@ -13,7 +13,8 @@ async function scrape({ browser, keyword, location, filters, targetPage, timeout
     const p = targetPage;
     const encodedKeyword = encodeURIComponent(keyword.replace(/\s+/g, "-"));
     const encodedLocation = encodeURIComponent(location.replace(/\s+/g, "-"));
-    const url = `https://www.glassdoor.com/Job/${encodedLocation}-${encodedKeyword}-jobs-SRCH_IL.0,${encodedLocation.length}_IN1_KO${encodedLocation.length + 1},${encodedLocation.length + 1 + encodedKeyword.length}.htm?p=${p}&employerSizes=3`;
+    const url = `https://www.glassdoor.com/Job/${encodedLocation}-${encodedKeyword}-jobs-SRCH_IL.0,${encodedLocation.length}_IN1_KO${encodedLocation.length + 1},${encodedLocation.length + 1 + encodedKeyword.length}.htm?p=${p}`;
+    // const url = `https://www.glassdoor.com/Job/${encodedLocation}-${encodedKeyword}-jobs-SRCH_IL.0,${encodedLocation.length}_IN1_KO${encodedLocation.length + 1},${encodedLocation.length + 1 + encodedKeyword.length}.htm?p=${p}&employerSizes=3`;
 
     onProgress(`Page ${p}: ${url}`);
 
