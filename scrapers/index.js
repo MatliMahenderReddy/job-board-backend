@@ -11,10 +11,10 @@ puppeteerExtra.use(StealthPlugin());
 // ==========================================
 
 const SCRAPERS = {
+  linkedin: require("./linkedin"),
   simplyhired: require("./simplyhired"),
   indeed: require("./indeed"),
   glassdoor: require("./glassdoor"),
-  linkedin: require("./linkedin"),
   // dice: require("./dice"),
   // monster: require("./monster"),
   
