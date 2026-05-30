@@ -2,7 +2,7 @@
 // INDEED SCRAPER
 // ======================================================
 
-// const { preparePage, safeText, retry } = require("./utils");
+const { preparePage, safeText, retry } = require("./utils");
 
 // async function scrape({ browser, keyword, location, filters, targetPage, timeout, onProgress }) {
 //   const page = await browser.newPage();
