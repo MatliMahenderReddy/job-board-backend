@@ -213,7 +213,7 @@ async function scrape({ browser, keyword, location, filters, targetPage, timeout
 
 async function scrapeDetail({ browser, job, timeout, retries }) {
   if (!job.link) return null;
-
+ if (!browser.isConnected()) return null; 
   const page = await browser.newPage();
   await preparePage(page);
 
