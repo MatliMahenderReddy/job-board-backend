@@ -952,103 +952,496 @@
 
 
 // ======================================================
-// LINKEDIN SCRAPER
+// LINKEDIN SCRAPER 310526:1152:
 // ======================================================
 
-const { preparePage, safeText, retry } = require("./utils");
+// const { preparePage, safeText, retry } = require("./utils");
 
-// LinkedIn date filter codes
+// // LinkedIn date filter codes
+// const DATE_FILTER_MAP = {
+//   "3h": "r10800",    // Past 3h
+//   "6h": "r21600",    // Past 6h
+//   "12h": "r43200",    // Past 12h
+//   "1": "r86400",    // Past 24h
+//   "3": "r259200",   // Past 3 days
+//   "7": "r604800",   // Past week
+//   "30": "r2592000", // Past month
+// };
+
+// // LinkedIn job type codes
+// const JOB_TYPE_MAP = {
+//   fulltime: "F",
+//   parttime: "P",
+//   contract: "C",
+//   temporary: "T",
+//   internship: "I",
+// };
+
+// async function scrape({ browser, keyword, location, filters, targetPage, timeout, onProgress }) {
+//   const page = await browser.newPage();
+//   await preparePage(page);
+//   let allJobs = [];
+
+//   try {
+//     const p = targetPage - 1;
+//     const params = new URLSearchParams({
+//       keywords: keyword,
+//       location,
+//       start: p * 25,
+//       sortBy: "DD", // Most recent
+//     });
+
+//       if (filters.datePosted && DATE_FILTER_MAP[filters.datePosted]) {
+//         params.set("f_TPR", DATE_FILTER_MAP[filters.datePosted]);
+//       }
+
+//       if (filters.jobType && JOB_TYPE_MAP[filters.jobType.toLowerCase()]) {
+//         params.set("f_JT", JOB_TYPE_MAP[filters.jobType.toLowerCase()]);
+//       }
+
+//       if (filters.remote) {
+//         params.set("f_WT", "2"); // Remote
+//       }
+
+//       if (filters.experienceLevel) {
+//         const expMap = { entry: "2", mid: "3", senior: "4", director: "5" };
+//         if (expMap[filters.experienceLevel]) params.set("f_E", expMap[filters.experienceLevel]);
+//       }
+//     // params.set(
+//     //   "f_CS",
+//     //   "1,2,3,4,5"
+//     // );
+
+//       const url = `https://www.linkedin.com/jobs/search?${params}`;
+//       console.log("url",url)
+//       onProgress(`Page ${targetPage}: ${url}`);
+
+//       try {
+//         await page.goto(url, { waitUntil: "domcontentloaded", timeout });
+//         await page.waitForSelector('.jobs-search__results-list li', { timeout: 20000 });
+
+//         const jobs = await page.$$eval('.jobs-search__results-list li', (cards) =>
+//           cards.map((card) => {
+//             const anchor = card.querySelector('a.base-card__full-link') || card.querySelector('a');
+//             const link = anchor?.href || "";
+    
+//             return {
+//               title: card.querySelector('.base-search-card__title')?.innerText?.trim() || "",
+//               company: card.querySelector('.base-search-card__subtitle a')?.innerText?.trim() || card.querySelector('.base-search-card__subtitle')?.innerText?.trim() || "",
+//               location: card.querySelector('.job-search-card__location')?.innerText?.trim() || "",
+//               salary: card.querySelector('.job-search-card__salary-info')?.innerText?.trim() || "",
+//               posted: card.querySelector('time')?.getAttribute("datetime") || card.querySelector('.job-search-card__listdate')?.innerText?.trim() || "",
+//               jobType: card.querySelector('.job-search-card__benefits')?.innerText?.trim() || "",
+//               link: link.split("?")[0], // clean URL
+//                peoples:"",
+//             };
+//           })
+//         );
+
+//         const valid = jobs.filter((j) => j.title && j.link);
+//         if (valid.length) {
+//           allJobs.push(...valid);
+//         }
+
+//         // LinkedIn lazy-loads — scroll down
+//         await page.evaluate(() => window.scrollBy(0, window.innerHeight * 2));
+//         await new Promise((r) => setTimeout(r, 1500));
+//       } catch (err) {
+//         onProgress(`Page ${targetPage} failed: ${err.message}`);
+//       }
+//   } finally {
+//     await page.close();
+//   }
+
+//   return dedup(allJobs);
+// }
+
+// // async function scrapeDetail({ browser, job, timeout, retries }) {
+// //   if (!job.link) return null;
+
+// //   const page = await browser.newPage();
+// //   await preparePage(page);
+
+// //   try {
+// //     const ok = await retry(async () => {
+// //       await page.goto(job.link, { waitUntil: "domcontentloaded", timeout });
+// //       await page.waitForSelector('.description__text', { timeout });
+// //     }, retries);
+
+// //     if (!ok) return null;
+
+// //     job.description = await safeText(page, '.description__text');
+// //     job.jobType = await safeText(page, '.description__job-criteria-text', job.jobType);
+// // job.applicants = await page.$eval('body', (body) => {
+// //   const all = [...body.querySelectorAll('span, li, div')];
+// //   const match = all
+// //     .map(el => el.textContent?.trim())
+// //     .find(text =>
+// //       text.length < 100 &&  // ✅ ignore large containers
+// //       (
+// //         /(\d+|over \d+)\s+applicants?/i.test(text) ||
+// //         /be among the first\s+\d+\s+applicants?/i.test(text) ||
+// //         /be an early applicant/i.test(text)
+// //       )
+// //     );
+// //   return match || "";
+// // }).catch(() => "");
+// //     // Get all criteria items
+// //     const criteria = await page.$$eval('.description__job-criteria-item', (items) => {
+// //       const map = {};
+// //       items.forEach((item) => {
+// //         const label = item.querySelector('.description__job-criteria-subheader')?.innerText?.trim() || "";
+// //         const value = item.querySelector('.description__job-criteria-text')?.innerText?.trim() || "";
+// //         map[label] = value;
+// //       });
+// //       return map;
+// //     });
+
+// //     if (criteria["Employment type"]) job.jobType = criteria["Employment type"];
+// //     if (criteria["Seniority level"]) job.seniority = criteria["Seniority level"];
+// //     if (criteria["Industries"]) job.industry = criteria["Industries"];
+
+// //     return job;
+// //   } catch {
+// //     return null;
+// //   } finally {
+// //     await page.close();
+// //   }
+// // }
+// // async function scrapeDetail({ browser, job, timeout, retries }) {
+// //   if (!job.link) return null;
+
+// //   const page = await browser.newPage();
+// //   await preparePage(page);
+
+// //   try {
+// //     const ok = await retry(async () => {
+// //       await page.goto(job.link, { waitUntil: "domcontentloaded", timeout });
+// //       await page.waitForSelector('.description__text', { timeout });
+// //     }, retries);
+
+// //     if (!ok) return null;
+
+// //     job.description = await safeText(page, '.description__text');
+// //     job.jobType = await safeText(page, '.description__job-criteria-text', job.jobType);
+
+// //     // Wait for dynamic content (applicant count loads after JS renders)
+// //     await new Promise((r) => setTimeout(r, 1500));
+
+// //     job.applicants = await page.$eval('body', (body) => {
+// //       const all = [...body.querySelectorAll('span, li, div')];
+// //       const match = all
+// //         .map(el => el.textContent?.trim())
+// //         .find(text =>
+// //           text.length < 100 &&
+// //           (
+// //             /(\d+|over \d+)\s+applicants?/i.test(text) ||
+// //             /be among the first\s+\d+\s+applicants?/i.test(text) ||
+// //             /be an early applicant/i.test(text) ||
+// //             /actively recruiting/i.test(text)
+// //           )
+// //         );
+// //       return match || "";
+// //     }).catch(() => "");
+    
+
+// //     // Get all criteria items
+// //     const criteria = await page.$$eval('.description__job-criteria-item', (items) => {
+// //       const map = {};
+// //       items.forEach((item) => {
+// //         const label = item.querySelector('.description__job-criteria-subheader')?.innerText?.trim() || "";
+// //         const value = item.querySelector('.description__job-criteria-text')?.innerText?.trim() || "";
+// //         map[label] = value;
+// //       });
+// //       return map;
+// //     });
+
+// //     if (criteria["Employment type"]) job.jobType = criteria["Employment type"];
+// //     if (criteria["Seniority level"]) job.seniority = criteria["Seniority level"];
+// //     if (criteria["Industries"]) job.industry = criteria["Industries"];
+
+// //     return job;
+// //   } catch {
+// //     return null;
+// //   } finally {
+// //     await page.close();
+// //   }
+// // }
+// async function scrapeDetail({ browser, job, timeout, retries }) {
+//   if (!job.link) return null;
+// if (!browser.isConnected()) return null; 
+//   const page = await browser.newPage();
+//   await preparePage(page);
+
+//   try {
+//     // ✅ Try guest API first for applicant count (no login needed)
+//     const jobId = job.link.split("-").pop();
+//     try {
+//       await page.goto(`https://www.linkedin.com/jobs-guest/jobs/api/jobPosting/${jobId}`, {
+//         waitUntil: "domcontentloaded",
+//         timeout,
+//       });
+//       job.peoples = await page.$eval('body', (body) => {
+//         const text = body.innerText;
+//         const match = text.match(/(over \d+|\d+)\s*applicants?/i)
+//           || text.match(/be among the first\s*\d+\s*applicants?/i)
+//           || text.match(/be an early applicant/i)
+//           || text.match(/people clicked apply/i);
+//         return match ? match[0].trim() : "";
+//       }).catch(() => "");
+//     } catch {
+//       job.peoples = "";
+//     }
+
+//     // ✅ Now go to full job page for description + criteria
+//     const ok = await retry(async () => {
+//       await page.goto(job.link, { waitUntil: "domcontentloaded", timeout });
+//       await page.waitForSelector('.description__text', { timeout });
+//     }, retries);
+
+//     if (!ok) return null;
+
+//     job.description = await safeText(page, '.description__text');
+//     job.jobType = await safeText(page, '.description__job-criteria-text', job.jobType);
+
+//     await new Promise((r) => setTimeout(r, 1500));
+
+//     // ✅ Fallback: if guest API gave nothing, try from full page
+//     if (!job.peoples) {
+//       job.peoples = await page.$eval('body', (body) => {
+//         const all = [...body.querySelectorAll('span, li, div')];
+//         const match = all
+//           .map(el => el.textContent?.trim())
+//           .find(text =>
+//             text.length < 100 &&
+//             (
+//               /(\d+|over \d+)\s+applicants?/i.test(text) ||
+//               /be among the first\s+\d+\s+applicants?/i.test(text) ||
+//               /be an early applicant/i.test(text) ||
+//               /actively recruiting/i.test(text)
+//             )
+//           );
+//         return match || "";
+//       }).catch(() => "");
+//     }
+    
+
+//     // ✅ Grab company description
+//    job.companyDescription = (() => {
+//   const desc = job.description || "";
+//   const markers = [
+//     "About the company",
+//     "About us", 
+//     "About ",  // catches "About Granite Construction..."
+//   ];
+//   for (const marker of markers) {
+//     const idx = desc.indexOf(marker);
+//     if (idx !== -1) {
+//       return desc.slice(idx).slice(0, 500).trim();
+//     }
+//   }
+//   return "";
+// })();
+
+//     // Get all criteria items
+//     const criteria = await page.$$eval('.description__job-criteria-item', (items) => {
+//       const map = {};
+//       items.forEach((item) => {
+//         const label = item.querySelector('.description__job-criteria-subheader')?.innerText?.trim() || "";
+//         const value = item.querySelector('.description__job-criteria-text')?.innerText?.trim() || "";
+//         map[label] = value;
+//       });
+//       return map;
+//     });
+
+//     if (criteria["Employment type"]) job.jobType = criteria["Employment type"];
+//     if (criteria["Seniority level"]) job.seniority = criteria["Seniority level"];
+//     if (criteria["Industries"]) job.industry = criteria["Industries"];
+
+//     return job;
+//   } catch {
+//     return null;
+//   } finally {
+//     await page.close();
+//   }
+// }
+// function dedup(jobs) {
+//   const map = new Map();
+//   for (const job of jobs) {
+//     const key = `${job.title}-${job.company}-${job.link}`;
+//     if (!map.has(key)) map.set(key, job);
+//   }
+//   return [...map.values()];
+// }
+
+// module.exports = { scrape, scrapeDetail };
+
+
+
+
+// ======================================================
+// LINKEDIN SCRAPER — Production Multi-Page
+// ======================================================
+
+const { safeText, retry } = require("./utils");
+
+// ─────────────────────────────────────────────────────
+// MAPS
+// ─────────────────────────────────────────────────────
 const DATE_FILTER_MAP = {
-  "3h": "r10800",    // Past 3h
-  "6h": "r21600",    // Past 6h
-  "12h": "r43200",    // Past 12h
-  "1": "r86400",    // Past 24h
-  "3": "r259200",   // Past 3 days
-  "7": "r604800",   // Past week
-  "30": "r2592000", // Past month
+  "3h":  "r10800",
+  "6h":  "r21600",
+  "12h": "r43200",
+  "1":   "r86400",
+  "3":   "r259200",
+  "7":   "r604800",
+  "30":  "r2592000",
 };
 
-// LinkedIn job type codes
 const JOB_TYPE_MAP = {
-  fulltime: "F",
-  parttime: "P",
-  contract: "C",
-  temporary: "T",
+  fulltime:   "F",
+  parttime:   "P",
+  contract:   "C",
+  temporary:  "T",
   internship: "I",
 };
 
-async function scrape({ browser, keyword, location, filters, targetPage, timeout, onProgress }) {
+const EXP_MAP = {
+  internship: "1",
+  entry:      "2",
+  mid:        "3",
+  senior:     "4",
+  director:   "5",
+  executive:  "6",
+};
+
+// ─────────────────────────────────────────────────────
+// HELPERS
+// ─────────────────────────────────────────────────────
+const sleep  = (ms) => new Promise((r) => setTimeout(r, ms));
+const jitter = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+
+async function prepareLinkedInPage(page) {
+  const USER_AGENTS = [
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+  ];
+  await page.setUserAgent(USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)]);
+  await page.setExtraHTTPHeaders({ "accept-language": "en-US,en;q=0.9" });
+  await page.setRequestInterception(true);
+  page.on("request", (req) => {
+    if (["image", "stylesheet", "font", "media"].includes(req.resourceType())) {
+      req.abort();
+    } else {
+      req.continue();
+    }
+  });
+  await page.evaluateOnNewDocument(() => {
+    Object.defineProperty(navigator, "webdriver", { get: () => undefined });
+  });
+}
+
+// ─────────────────────────────────────────────────────
+// SCRAPE — one page
+// ─────────────────────────────────────────────────────
+async function scrape({
+  browser,
+  keyword,
+  location,
+  filters = {},
+  targetPage = 1,
+  timeout,
+  onProgress,
+}) {
   const page = await browser.newPage();
-  await preparePage(page);
+  await prepareLinkedInPage(page);
   let allJobs = [];
 
   try {
-    const p = targetPage - 1;
+    // LinkedIn pagination: start = (page-1) * 25
+    const start = (targetPage - 1) * 25;
+
     const params = new URLSearchParams({
       keywords: keyword,
       location,
-      start: p * 25,
-      sortBy: "DD", // Most recent
+      start,
+      sortBy: "DD",
     });
 
-      if (filters.datePosted && DATE_FILTER_MAP[filters.datePosted]) {
-        params.set("f_TPR", DATE_FILTER_MAP[filters.datePosted]);
-      }
+    if (filters.datePosted && DATE_FILTER_MAP[filters.datePosted]) {
+      params.set("f_TPR", DATE_FILTER_MAP[filters.datePosted]);
+    }
+    if (filters.jobType && JOB_TYPE_MAP[filters.jobType?.toLowerCase()]) {
+      params.set("f_JT", JOB_TYPE_MAP[filters.jobType.toLowerCase()]);
+    }
+    if (filters.remote) {
+      params.set("f_WT", "2");
+    }
+    if (filters.experienceLevel && EXP_MAP[filters.experienceLevel]) {
+      params.set("f_E", EXP_MAP[filters.experienceLevel]);
+    }
 
-      if (filters.jobType && JOB_TYPE_MAP[filters.jobType.toLowerCase()]) {
-        params.set("f_JT", JOB_TYPE_MAP[filters.jobType.toLowerCase()]);
-      }
+    const url = `https://www.linkedin.com/jobs/search?${params}`;
+    onProgress(`Page ${targetPage} (start=${start}): ${url}`);
 
-      if (filters.remote) {
-        params.set("f_WT", "2"); // Remote
-      }
+    try {
+      await page.goto(url, { waitUntil: "domcontentloaded", timeout });
 
-      if (filters.experienceLevel) {
-        const expMap = { entry: "2", mid: "3", senior: "4", director: "5" };
-        if (expMap[filters.experienceLevel]) params.set("f_E", expMap[filters.experienceLevel]);
-      }
-    // params.set(
-    //   "f_CS",
-    //   "1,2,3,4,5"
-    // );
+      // LinkedIn lazy-loads — wait for cards
+      await page.waitForSelector(
+        ".jobs-search__results-list li, ul.jobs-search__results-list > li",
+        { timeout: 20000 }
+      );
 
-      const url = `https://www.linkedin.com/jobs/search?${params}`;
-      console.log("url",url)
-      onProgress(`Page ${targetPage}: ${url}`);
+      // Scroll to trigger all lazy-loaded cards
+      await page.evaluate(async () => {
+        await new Promise((resolve) => {
+          let total = 0;
+          const step = 300;
+          const timer = setInterval(() => {
+            window.scrollBy(0, step);
+            total += step;
+            if (total >= document.body.scrollHeight) {
+              clearInterval(timer);
+              resolve();
+            }
+          }, 100);
+        });
+      });
+      await sleep(jitter(800, 1500));
 
-      try {
-        await page.goto(url, { waitUntil: "domcontentloaded", timeout });
-        await page.waitForSelector('.jobs-search__results-list li', { timeout: 20000 });
-
-        const jobs = await page.$$eval('.jobs-search__results-list li', (cards) =>
+      const jobs = await page.$$eval(
+        ".jobs-search__results-list li",
+        (cards) =>
           cards.map((card) => {
-            const anchor = card.querySelector('a.base-card__full-link') || card.querySelector('a');
-            const link = anchor?.href || "";
-    
+            const anchor =
+              card.querySelector("a.base-card__full-link") ||
+              card.querySelector("a");
+            const link = anchor?.href?.split("?")[0] || "";
+
             return {
-              title: card.querySelector('.base-search-card__title')?.innerText?.trim() || "",
-              company: card.querySelector('.base-search-card__subtitle a')?.innerText?.trim() || card.querySelector('.base-search-card__subtitle')?.innerText?.trim() || "",
-              location: card.querySelector('.job-search-card__location')?.innerText?.trim() || "",
-              salary: card.querySelector('.job-search-card__salary-info')?.innerText?.trim() || "",
-              posted: card.querySelector('time')?.getAttribute("datetime") || card.querySelector('.job-search-card__listdate')?.innerText?.trim() || "",
-              jobType: card.querySelector('.job-search-card__benefits')?.innerText?.trim() || "",
-              link: link.split("?")[0], // clean URL
-               peoples:"",
+              title:    card.querySelector(".base-search-card__title")?.innerText?.trim() || "",
+              company:  card.querySelector(".base-search-card__subtitle a")?.innerText?.trim() ||
+                        card.querySelector(".base-search-card__subtitle")?.innerText?.trim() || "",
+              location: card.querySelector(".job-search-card__location")?.innerText?.trim() || "",
+              salary:   card.querySelector(".job-search-card__salary-info")?.innerText?.trim() || "",
+              posted:   card.querySelector("time")?.getAttribute("datetime") ||
+                        card.querySelector(".job-search-card__listdate")?.innerText?.trim() || "",
+              jobType:  card.querySelector(".job-search-card__benefits")?.innerText?.trim() || "",
+              link,
+              peoples:  "",
             };
           })
-        );
+      );
 
-        const valid = jobs.filter((j) => j.title && j.link);
-        if (valid.length) {
-          allJobs.push(...valid);
-        }
+      const valid = jobs.filter((j) => j.title && j.link);
+      onProgress(`Page ${targetPage}: found ${valid.length} valid jobs`);
+      allJobs.push(...valid);
 
-        // LinkedIn lazy-loads — scroll down
-        await page.evaluate(() => window.scrollBy(0, window.innerHeight * 2));
-        await new Promise((r) => setTimeout(r, 1500));
-      } catch (err) {
-        onProgress(`Page ${targetPage} failed: ${err.message}`);
-      }
+    } catch (err) {
+      onProgress(`Page ${targetPage} failed: ${err.message}`);
+    }
   } finally {
     await page.close();
   }
@@ -1056,207 +1449,97 @@ async function scrape({ browser, keyword, location, filters, targetPage, timeout
   return dedup(allJobs);
 }
 
-// async function scrapeDetail({ browser, job, timeout, retries }) {
-//   if (!job.link) return null;
-
-//   const page = await browser.newPage();
-//   await preparePage(page);
-
-//   try {
-//     const ok = await retry(async () => {
-//       await page.goto(job.link, { waitUntil: "domcontentloaded", timeout });
-//       await page.waitForSelector('.description__text', { timeout });
-//     }, retries);
-
-//     if (!ok) return null;
-
-//     job.description = await safeText(page, '.description__text');
-//     job.jobType = await safeText(page, '.description__job-criteria-text', job.jobType);
-// job.applicants = await page.$eval('body', (body) => {
-//   const all = [...body.querySelectorAll('span, li, div')];
-//   const match = all
-//     .map(el => el.textContent?.trim())
-//     .find(text =>
-//       text.length < 100 &&  // ✅ ignore large containers
-//       (
-//         /(\d+|over \d+)\s+applicants?/i.test(text) ||
-//         /be among the first\s+\d+\s+applicants?/i.test(text) ||
-//         /be an early applicant/i.test(text)
-//       )
-//     );
-//   return match || "";
-// }).catch(() => "");
-//     // Get all criteria items
-//     const criteria = await page.$$eval('.description__job-criteria-item', (items) => {
-//       const map = {};
-//       items.forEach((item) => {
-//         const label = item.querySelector('.description__job-criteria-subheader')?.innerText?.trim() || "";
-//         const value = item.querySelector('.description__job-criteria-text')?.innerText?.trim() || "";
-//         map[label] = value;
-//       });
-//       return map;
-//     });
-
-//     if (criteria["Employment type"]) job.jobType = criteria["Employment type"];
-//     if (criteria["Seniority level"]) job.seniority = criteria["Seniority level"];
-//     if (criteria["Industries"]) job.industry = criteria["Industries"];
-
-//     return job;
-//   } catch {
-//     return null;
-//   } finally {
-//     await page.close();
-//   }
-// }
-// async function scrapeDetail({ browser, job, timeout, retries }) {
-//   if (!job.link) return null;
-
-//   const page = await browser.newPage();
-//   await preparePage(page);
-
-//   try {
-//     const ok = await retry(async () => {
-//       await page.goto(job.link, { waitUntil: "domcontentloaded", timeout });
-//       await page.waitForSelector('.description__text', { timeout });
-//     }, retries);
-
-//     if (!ok) return null;
-
-//     job.description = await safeText(page, '.description__text');
-//     job.jobType = await safeText(page, '.description__job-criteria-text', job.jobType);
-
-//     // Wait for dynamic content (applicant count loads after JS renders)
-//     await new Promise((r) => setTimeout(r, 1500));
-
-//     job.applicants = await page.$eval('body', (body) => {
-//       const all = [...body.querySelectorAll('span, li, div')];
-//       const match = all
-//         .map(el => el.textContent?.trim())
-//         .find(text =>
-//           text.length < 100 &&
-//           (
-//             /(\d+|over \d+)\s+applicants?/i.test(text) ||
-//             /be among the first\s+\d+\s+applicants?/i.test(text) ||
-//             /be an early applicant/i.test(text) ||
-//             /actively recruiting/i.test(text)
-//           )
-//         );
-//       return match || "";
-//     }).catch(() => "");
-    
-
-//     // Get all criteria items
-//     const criteria = await page.$$eval('.description__job-criteria-item', (items) => {
-//       const map = {};
-//       items.forEach((item) => {
-//         const label = item.querySelector('.description__job-criteria-subheader')?.innerText?.trim() || "";
-//         const value = item.querySelector('.description__job-criteria-text')?.innerText?.trim() || "";
-//         map[label] = value;
-//       });
-//       return map;
-//     });
-
-//     if (criteria["Employment type"]) job.jobType = criteria["Employment type"];
-//     if (criteria["Seniority level"]) job.seniority = criteria["Seniority level"];
-//     if (criteria["Industries"]) job.industry = criteria["Industries"];
-
-//     return job;
-//   } catch {
-//     return null;
-//   } finally {
-//     await page.close();
-//   }
-// }
+// ─────────────────────────────────────────────────────
+// DETAIL
+// ─────────────────────────────────────────────────────
 async function scrapeDetail({ browser, job, timeout, retries }) {
   if (!job.link) return null;
-if (!browser.isConnected()) return null; 
+  if (!browser.isConnected()) return null;
+
   const page = await browser.newPage();
-  await preparePage(page);
+  await prepareLinkedInPage(page);
 
   try {
-    // ✅ Try guest API first for applicant count (no login needed)
+    // ── Try guest API for applicant count ──────────────────────────────────
     const jobId = job.link.split("-").pop();
     try {
-      await page.goto(`https://www.linkedin.com/jobs-guest/jobs/api/jobPosting/${jobId}`, {
-        waitUntil: "domcontentloaded",
-        timeout,
-      });
-      job.peoples = await page.$eval('body', (body) => {
-        const text = body.innerText;
-        const match = text.match(/(over \d+|\d+)\s*applicants?/i)
-          || text.match(/be among the first\s*\d+\s*applicants?/i)
-          || text.match(/be an early applicant/i)
-          || text.match(/people clicked apply/i);
-        return match ? match[0].trim() : "";
-      }).catch(() => "");
+      await page.goto(
+        `https://www.linkedin.com/jobs-guest/jobs/api/jobPosting/${jobId}`,
+        { waitUntil: "domcontentloaded", timeout: 10000 }
+      );
+      job.peoples = await page
+        .$eval("body", (body) => {
+          const text = body.innerText;
+          const m =
+            text.match(/(over \d+|\d+)\s*applicants?/i) ||
+            text.match(/be among the first\s*\d+\s*applicants?/i) ||
+            text.match(/be an early applicant/i);
+          return m ? m[0].trim() : "";
+        })
+        .catch(() => "");
     } catch {
       job.peoples = "";
     }
 
-    // ✅ Now go to full job page for description + criteria
+    // ── Full job page ──────────────────────────────────────────────────────
     const ok = await retry(async () => {
       await page.goto(job.link, { waitUntil: "domcontentloaded", timeout });
-      await page.waitForSelector('.description__text', { timeout });
+      await page.waitForSelector(".description__text", { timeout });
     }, retries);
 
     if (!ok) return null;
 
-    job.description = await safeText(page, '.description__text');
-    job.jobType = await safeText(page, '.description__job-criteria-text', job.jobType);
+    job.description = await safeText(page, ".description__text");
+    await sleep(jitter(800, 1500));
 
-    await new Promise((r) => setTimeout(r, 1500));
-
-    // ✅ Fallback: if guest API gave nothing, try from full page
+    // Fallback applicant count from full page
     if (!job.peoples) {
-      job.peoples = await page.$eval('body', (body) => {
-        const all = [...body.querySelectorAll('span, li, div')];
-        const match = all
-          .map(el => el.textContent?.trim())
-          .find(text =>
-            text.length < 100 &&
-            (
-              /(\d+|over \d+)\s+applicants?/i.test(text) ||
-              /be among the first\s+\d+\s+applicants?/i.test(text) ||
-              /be an early applicant/i.test(text) ||
-              /actively recruiting/i.test(text)
-            )
-          );
-        return match || "";
-      }).catch(() => "");
+      job.peoples = await page
+        .$eval("body", (body) => {
+          const all = [...body.querySelectorAll("span, li, div")];
+          const match = all
+            .map((el) => el.textContent?.trim())
+            .find(
+              (text) =>
+                text.length < 100 &&
+                (/(\d+|over \d+)\s+applicants?/i.test(text) ||
+                  /be among the first\s+\d+\s+applicants?/i.test(text) ||
+                  /be an early applicant/i.test(text) ||
+                  /actively recruiting/i.test(text))
+            );
+          return match || "";
+        })
+        .catch(() => "");
     }
-    
 
-    // ✅ Grab company description
-   job.companyDescription = (() => {
-  const desc = job.description || "";
-  const markers = [
-    "About the company",
-    "About us", 
-    "About ",  // catches "About Granite Construction..."
-  ];
-  for (const marker of markers) {
-    const idx = desc.indexOf(marker);
-    if (idx !== -1) {
-      return desc.slice(idx).slice(0, 500).trim();
-    }
-  }
-  return "";
-})();
+    // ── Criteria (Employment type, Seniority, Industries) ─────────────────
+    const criteria = await page
+      .$$eval(".description__job-criteria-item", (items) => {
+        const map = {};
+        items.forEach((item) => {
+          const label =
+            item.querySelector(".description__job-criteria-subheader")?.innerText?.trim() || "";
+          const value =
+            item.querySelector(".description__job-criteria-text")?.innerText?.trim() || "";
+          map[label] = value;
+        });
+        return map;
+      })
+      .catch(() => ({}));
 
-    // Get all criteria items
-    const criteria = await page.$$eval('.description__job-criteria-item', (items) => {
-      const map = {};
-      items.forEach((item) => {
-        const label = item.querySelector('.description__job-criteria-subheader')?.innerText?.trim() || "";
-        const value = item.querySelector('.description__job-criteria-text')?.innerText?.trim() || "";
-        map[label] = value;
-      });
-      return map;
-    });
-
-    if (criteria["Employment type"]) job.jobType = criteria["Employment type"];
+    if (criteria["Employment type"]) job.jobType  = criteria["Employment type"];
     if (criteria["Seniority level"]) job.seniority = criteria["Seniority level"];
-    if (criteria["Industries"]) job.industry = criteria["Industries"];
+    if (criteria["Industries"])      job.industry  = criteria["Industries"];
+
+    // ── Company description snippet ────────────────────────────────────────
+    const desc = job.description || "";
+    for (const marker of ["About the company", "About us", "About "]) {
+      const idx = desc.indexOf(marker);
+      if (idx !== -1) {
+        job.companyDescription = desc.slice(idx, idx + 500).trim();
+        break;
+      }
+    }
 
     return job;
   } catch {
@@ -1265,10 +1548,12 @@ if (!browser.isConnected()) return null;
     await page.close();
   }
 }
+
+// ─────────────────────────────────────────────────────
 function dedup(jobs) {
   const map = new Map();
   for (const job of jobs) {
-    const key = `${job.title}-${job.company}-${job.link}`;
+    const key = `${job.title}||${job.company}||${job.link}`;
     if (!map.has(key)) map.set(key, job);
   }
   return [...map.values()];
